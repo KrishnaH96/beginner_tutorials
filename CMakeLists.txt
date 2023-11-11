@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.8)
 
 # Project name
-project(cpp_pubsub)
+project(first_ros_package)
 
 # Check if the C++ compiler is GNU C++ or Clang, and add compile options for warnings
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -13,6 +13,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
 
 # Adding executables
 add_executable(talker src/publisher_member_function.cpp)
@@ -20,6 +21,10 @@ ament_target_dependencies(talker rclcpp std_msgs)
 
 add_executable(listener src/subscriber_member_function.cpp)
 ament_target_dependencies(listener rclcpp std_msgs)
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "srv/ChangeString.srv"
+)
 
 # Install executables to the 'lib' directory of the project
 install(TARGETS
