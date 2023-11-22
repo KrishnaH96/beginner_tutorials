@@ -76,6 +76,16 @@ ros2 service call /change_string first_ros_package/srv/ChangeString  "{first_nam
 
 ## Results
 
+1. With Frequncy 500:
+We will get the warn message.
+
+![Warn Log](Results/with_warn.png)
+
+2. With Frequncy 1200:
+We will get the fatal message.
+
+![Fatal Log](Results/with_fatal.png)
+
 
 
 
