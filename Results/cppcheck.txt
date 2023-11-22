@@ -1,4 +1,7 @@
+krishnah@f109950a6542:~/ros2_ws/src/beginner_tutorials/src$ cppcheck --enable=all --std=c++17 -I/path/to/your/includes publisher_member_function.cpp subscriber_member_function.cpp
+(information) Couldn't find path given by -I '/path/to/your/includes/'
 Checking publisher_member_function.cpp ...
-1/2 files checked 52% done
+1/2 files checked 69% done
 Checking subscriber_member_function.cpp ...
 2/2 files checked 100% done
+nofile:0:0: information: Cppcheck cannot find all the include files (use --check-config for details) [missingInclude]

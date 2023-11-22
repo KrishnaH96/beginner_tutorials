@@ -9,8 +9,8 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Enable compile_commands.json
+ # Enable compile_commands.json
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 execute_process(COMMAND cmake -E create_symlink
                 "${PROJECT_BINARY_DIR}/compile_commands.json"
                 "${PROJECT_SOURCE_DIR}/compile_commands.json")
@@ -36,11 +36,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 )
 
 rosidl_target_interfaces(talker ${PROJECT_NAME} "rosidl_typesupport_cpp")
-# target_include_directories(talker PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/rosidl_typesupport_cpp)
-
-# rosidl_get_typesupport_target(talker ${PROJECT_NAME} "rosidl_typesupport_cpp")
-# target_include_directories(talker PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/rosidl_typesupport_cpp)
-# target_link_libraries(talker ${rosidl_runtime_cpp_LIBRARIES})
 
 # Install executables to the 'lib' directory of the project
 install(TARGETS
