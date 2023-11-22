@@ -24,7 +24,16 @@ ament_target_dependencies(listener rclcpp std_msgs)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/ChangeString.srv"
+
+  DEPENDENCIES std_msgs 
 )
+
+rosidl_target_interfaces(talker ${PROJECT_NAME} "rosidl_typesupport_cpp")
+# target_include_directories(talker PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/rosidl_typesupport_cpp)
+
+# rosidl_get_typesupport_target(talker ${PROJECT_NAME} "rosidl_typesupport_cpp")
+# target_include_directories(talker PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/rosidl_typesupport_cpp)
+# target_link_libraries(talker ${rosidl_runtime_cpp_LIBRARIES})
 
 # Install executables to the 'lib' directory of the project
 install(TARGETS

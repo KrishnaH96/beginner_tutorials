@@ -28,6 +28,7 @@
   * under the License.
  */
 
+#include "first_ros_package/srv/change_string.hpp"
 #include <chrono>
 #include <functional>
 #include <memory>
@@ -35,6 +36,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
+
 
 using namespace std::chrono_literals;
 
@@ -51,9 +53,39 @@ class MinimalPublisher : public rclcpp::Node {
    * @brief Constructor for the MinimalPublisher class.
    */
   MinimalPublisher() : Node("minimal_publisher"), count_(0) {
+
+    message.data = "No Custom Name yet... Defaut John Doe....";
+
+    this->declare_parameter<int>("publish_frequency_ms", 1000); // Set a default value, e.g., 1000 ms
+
+    // Retrieve the parameter value
+    int publish_frequency_ms_ = this->get_parameter("publish_frequency_ms").as_int();
+
+    // Log information based on the parameter value
+    RCLCPP_INFO_STREAM(this->get_logger(), "Current frequency: " << publish_frequency_ms_);
+
+    if (publish_frequency_ms_ == 500) {
+        RCLCPP_WARN_STREAM(this->get_logger(), "Using default frequency " << publish_frequency_ms_);
+    }
+
+    if (publish_frequency_ms_ >= 1000) {
+        RCLCPP_FATAL_STREAM(this->get_logger(), "Publishing slow, change frequency ");
+    }
+
+    if (publish_frequency_ms_ < 50) {
+        RCLCPP_ERROR_STREAM(this->get_logger(), "Publishing too fast, some values may skip ");
+    }
+
     publisher_ = this->create_publisher<std_msgs::msg::String>("topic", 10);
+
     timer_ = this->create_wall_timer(
-        500ms, std::bind(&MinimalPublisher::timer_callback, this));
+        std::chrono::milliseconds(publish_frequency_ms_),
+            std::bind(&MinimalPublisher::timer_callback, this));
+
+    service_ = this->create_service<first_ros_package::srv::ChangeString>(
+            "change_string",
+             std::bind(&MinimalPublisher::changeString, this,
+                 std::placeholders::_1, std::placeholders::_2));
   }
 
  private:
@@ -61,16 +93,28 @@ class MinimalPublisher : public rclcpp::Node {
    * @brief Timer callback function for publishing messages at a fixed rate.
    */
   void timer_callback() {
-    auto message = std_msgs::msg::String();
-    message.data =
-        "This is a custom string Message!!" + std::to_string(count_++);
+
     RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
     publisher_->publish(message);
   }
 
+  void changeString(const std::shared_ptr<first_ros_package
+                    ::srv::ChangeString::Request> request,
+                      std::shared_ptr<first_ros_package::srv
+                      ::ChangeString::Response> response) {
+        response->full_name = request->first_name + " " + request->last_name;
+
+        RCLCPP_INFO(this->get_logger(),
+         "Service request processed and the Response is '%s'",
+                     response->full_name.c_str());
+                     message.data = response->full_name;
+    }
+
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
+  rclcpp::Service<first_ros_package::srv::ChangeString>::SharedPtr service_;
   size_t count_;
+  std_msgs::msg::String message;
 };
 
 /**
