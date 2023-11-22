@@ -6,26 +6,22 @@
  * publishes custom string messages to a topic at a fixed rate.
  *
  * @author Krishna Rajesh Hundekari
- * @date 2023-11-07
+ * @date 2023-11-21
  * @copyright 2023 Krishna Rajesh Hundekari
-* Apache License Version 2.0, January 2004
-
-  * Licensed to the Apache Software Foundation (ASF) under one
-  * or more contributor license agreements.  See the NOTICE file
-  * distributed with this work for additional information
-  * regarding copyright ownership.  The ASF licenses this file
-  * to you under the Apache License, Version 2.0 (the
-  * "License"); you may not use this file except in compliance
-  * with the License.  You may obtain a copy of the License at
-  *
-  *   http://www.apache.org/licenses/LICENSE-2.0
-  *
-  * Unless required by applicable law or agreed to in writing,
-  * software distributed under the License is distributed on an
-  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-  * KIND, either express or implied.  See the License for the
-  * specific language governing permissions and limitations
-  * under the License.
+ * Apache License Version 2.0, January 2004
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements. See the NOTICE file distributed with this
+ * work for additional information regarding copyright ownership. The ASF
+ * licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 #include <chrono>
@@ -33,6 +29,7 @@
 #include <memory>
 #include <string>
 
+#include "first_ros_package/srv/change_string.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 
@@ -51,9 +48,47 @@ class MinimalPublisher : public rclcpp::Node {
    * @brief Constructor for the MinimalPublisher class.
    */
   MinimalPublisher() : Node("minimal_publisher"), count_(0) {
+    // Set the default message data
+    message.data = "No Custom Name yet... Default John Doe....";
+
+    // Log a debug message with the initial message data
+    RCLCPP_DEBUG_STREAM(
+        this->get_logger(),
+        "Custom message that will be published: " + message.data);
+
+    // Declare and get the publishing frequency parameter
+    this->declare_parameter<int>("pub_freq");
+    int pub_freq_ = this->get_parameter("pub_freq").as_int();
+
+    // Log the current publishing frequency
+    RCLCPP_INFO_STREAM(this->get_logger(), "Current frequency: " << pub_freq_);
+
+    // Check and log warnings, fatal errors, or errors based on the publishing
+    // frequency
+    if (pub_freq_ == 500) {
+      RCLCPP_WARN_STREAM(this->get_logger(),
+                         "Same as default frequency that is " << pub_freq_);
+    }
+
+    if (pub_freq_ >= 1000) {
+      RCLCPP_FATAL_STREAM(this->get_logger(),
+                          "It's too slow, fatal error.... ");
+    }
+
+    if (pub_freq_ < 50) {
+      RCLCPP_ERROR_STREAM(this->get_logger(),
+                          "It's too fast, data loss warning.... ");
+    }
+
+    // Create publisher, timer, and service
     publisher_ = this->create_publisher<std_msgs::msg::String>("topic", 10);
     timer_ = this->create_wall_timer(
-        500ms, std::bind(&MinimalPublisher::timer_callback, this));
+        std::chrono::milliseconds(pub_freq_),
+        std::bind(&MinimalPublisher::timer_callback, this));
+    service_ = this->create_service<first_ros_package::srv::ChangeString>(
+        "change_string",
+        std::bind(&MinimalPublisher::changeString, this, std::placeholders::_1,
+                  std::placeholders::_2));
   }
 
  private:
@@ -61,16 +96,47 @@ class MinimalPublisher : public rclcpp::Node {
    * @brief Timer callback function for publishing messages at a fixed rate.
    */
   void timer_callback() {
-    auto message = std_msgs::msg::String();
-    message.data =
-        "This is a custom string Message!!" + std::to_string(count_++);
+    // Log an info message with the data being published
     RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
     publisher_->publish(message);
   }
 
+  /**
+   * @brief Callback function for handling service requests to change the
+   * string.
+   * @param request The service request.
+   * @param response The service response.
+   */
+  void changeString(
+      const std::shared_ptr<first_ros_package::srv::ChangeString::Request>
+          request,
+      std::shared_ptr<first_ros_package::srv::ChangeString::Response>
+          response) {
+    // Concatenate first and last names from the service request
+    response->full_name = request->first_name + " " + request->last_name;
+
+    // Log an info message with the processed service request and response
+    RCLCPP_INFO(this->get_logger(), "Service request processed. Response: '%s'",
+                response->full_name.c_str());
+
+    // Update the message data with the response for future publishing
+    message.data = response->full_name;
+  }
+
+  // Shared pointer to the timer for publishing messages at a fixed rate.
   rclcpp::TimerBase::SharedPtr timer_;
+
+  // Shared pointer to the publisher for publishing string messages.
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
+
+  // Shared pointer to the service for handling string changes.
+  rclcpp::Service<first_ros_package::srv::ChangeString>::SharedPtr service_;
+
+  // Variable to keep track of a count or index, not currently used.
   size_t count_;
+
+  // String message variable to store and publish custom string messages.
+  std_msgs::msg::String message;
 };
 
 /**
@@ -80,9 +146,19 @@ class MinimalPublisher : public rclcpp::Node {
  * @param argv An array of command line arguments.
  * @return An integer status code.
  */
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
+  // Initialize the ROS 2 node
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<MinimalPublisher>());
+
+  // Create an instance of the MinimalPublisher class
+  auto minimal_publisher = std::make_shared<MinimalPublisher>();
+
+  // Spin the node, i.e., keep it active and responsive to events
+  rclcpp::spin(minimal_publisher);
+
+  // Shutdown the ROS 2 node
   rclcpp::shutdown();
+
+  // Return an integer status code
   return 0;
 }
