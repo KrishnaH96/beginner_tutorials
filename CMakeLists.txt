@@ -9,6 +9,13 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Enable compile_commands.json
+execute_process(COMMAND cmake -E create_symlink
+                "${PROJECT_BINARY_DIR}/compile_commands.json"
+                "${PROJECT_SOURCE_DIR}/compile_commands.json")
+
+
 # Find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -40,6 +47,9 @@ install(TARGETS
   talker
   listener
   DESTINATION lib/${PROJECT_NAME})
+
+install(DIRECTORY launch
+DESTINATION share/${PROJECT_NAME})
 
 # Enable testing if BUILD_TESTING is set
 if(BUILD_TESTING)
