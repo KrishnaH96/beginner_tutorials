@@ -30,11 +30,23 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
+from launch.conditions import IfCondition
+from launch.actions import ExecuteProcess
 
 def generate_launch_description():
     # Declare the launch argument for publish frequency
     publisher_freq_launch = DeclareLaunchArgument(
         "publish_frequency", default_value='1000'
+    )
+    arguements_record_bag = DeclareLaunchArgument(
+        'record_bag',
+        default_value='true',
+        description='Enable/Disable bag recording'
+    )
+    node_record_bag = ExecuteProcess(
+        condition=IfCondition(LaunchConfiguration('record_bag')),
+        cmd=['ros2', 'bag', 'record', '-a'],
+        output='screen'
     )
 
     return LaunchDescription([
@@ -44,5 +56,5 @@ def generate_launch_description():
             package='first_ros_package', 
             executable='talker',
             parameters=[{"pub_freq": LaunchConfiguration('publish_frequency')}]  # Pass the publish frequency in milliseconds
-        )  
+        )  ,arguements_record_bag,node_record_bag
     ])

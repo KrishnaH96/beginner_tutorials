@@ -60,7 +60,7 @@ class MinimalPublisher : public rclcpp::Node {
         "Custom message that will be published: " + message.data);
 
     // Declare and get the publishing frequency parameter
-    this->declare_parameter<int>("pub_freq");
+    this->declare_parameter<int>("pub_freq", 1000);
     int pub_freq_ = this->get_parameter("pub_freq").as_int();
 
     // Log the current publishing frequency
@@ -83,7 +83,7 @@ class MinimalPublisher : public rclcpp::Node {
                           "It's too fast, data loss warning.... ");
     }
 
-    // Create publisher, timer, and service
+    // Create publisher, timer, service and tf_broadcaster.
     publisher_ = this->create_publisher<std_msgs::msg::String>("topic", 10);
 
 
@@ -134,28 +134,38 @@ class MinimalPublisher : public rclcpp::Node {
     message.data = response->full_name;
   }
 
-   void publish_transform_() {
+/**
+ * @brief Publish a transform from the "world" frame to the "talk" frame.
+ *
+ * This function publishes a transform using the TF2 broadcaster from the
+ * "world" frame to the "talk" frame with a translation of (5.0, 5.0, 0.0)
+ * and a rotation of (1.57, 1.57, 0).
+ */
+void publish_transform_() {
+  // Create a TransformStamped message
+  geometry_msgs::msg::TransformStamped t;
 
-    geometry_msgs::msg::TransformStamped t;
+  // Set the header information
+  t.header.stamp = this->get_clock()->now();
+  t.header.frame_id = "world";
+  t.child_frame_id = "talk";
 
-    t.header.stamp = this->get_clock()->now();
-    t.header.frame_id = "world";
-    t.child_frame_id = "talk";
+  // Set the translation
+  t.transform.translation.x = 5.0;
+  t.transform.translation.y = 5.0;
+  t.transform.translation.z = 0.0;
 
-    t.transform.translation.x = 5.0;
-    t.transform.translation.y = 5.0;
-    t.transform.translation.z = 0.0;
+  // Set the rotation using Roll-Pitch-Yaw angles
+  tf2::Quaternion q;
+  q.setRPY(1.57, 1.57, 0);
+  t.transform.rotation.x = q.x();
+  t.transform.rotation.y = q.y();
+  t.transform.rotation.z = q.z();
+  t.transform.rotation.w = q.w();
 
-    tf2::Quaternion q;
-    q.setRPY(1.57, 1.57, 0);
-    t.transform.rotation.x = q.x();
-    t.transform.rotation.y = q.y();
-    t.transform.rotation.z = q.z();
-    t.transform.rotation.w = q.w();
-
-    tf_broadcaster_->sendTransform(t);
-  }
-
+  // Send the transform using the TF2 broadcaster
+  tf_broadcaster_->sendTransform(t);
+}
 
   // Shared pointer to the timer for publishing messages at a fixed rate.
   rclcpp::TimerBase::SharedPtr timer_;
