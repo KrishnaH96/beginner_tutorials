@@ -32,6 +32,9 @@
 #include "first_ros_package/srv/change_string.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
+#include "tf2/LinearMath/Quaternion.h"
+#include "tf2_ros/transform_broadcaster.h"
+
 
 using namespace std::chrono_literals;
 
@@ -82,13 +85,19 @@ class MinimalPublisher : public rclcpp::Node {
 
     // Create publisher, timer, and service
     publisher_ = this->create_publisher<std_msgs::msg::String>("topic", 10);
+
+
     timer_ = this->create_wall_timer(
         std::chrono::milliseconds(pub_freq_),
         std::bind(&MinimalPublisher::timer_callback, this));
+
     service_ = this->create_service<first_ros_package::srv::ChangeString>(
         "change_string",
         std::bind(&MinimalPublisher::changeString, this, std::placeholders::_1,
                   std::placeholders::_2));
+
+    tf_broadcaster_ =
+      std::make_unique<tf2_ros::TransformBroadcaster>(*this);
   }
 
  private:
@@ -99,6 +108,8 @@ class MinimalPublisher : public rclcpp::Node {
     // Log an info message with the data being published
     RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
     publisher_->publish(message);
+
+    publish_transform_();
   }
 
   /**
@@ -123,6 +134,29 @@ class MinimalPublisher : public rclcpp::Node {
     message.data = response->full_name;
   }
 
+   void publish_transform_() {
+
+    geometry_msgs::msg::TransformStamped t;
+
+    t.header.stamp = this->get_clock()->now();
+    t.header.frame_id = "world";
+    t.child_frame_id = "talk";
+
+    t.transform.translation.x = 5.0;
+    t.transform.translation.y = 5.0;
+    t.transform.translation.z = 0.0;
+
+    tf2::Quaternion q;
+    q.setRPY(1.57, 1.57, 0);
+    t.transform.rotation.x = q.x();
+    t.transform.rotation.y = q.y();
+    t.transform.rotation.z = q.z();
+    t.transform.rotation.w = q.w();
+
+    tf_broadcaster_->sendTransform(t);
+  }
+
+
   // Shared pointer to the timer for publishing messages at a fixed rate.
   rclcpp::TimerBase::SharedPtr timer_;
 
@@ -137,6 +171,8 @@ class MinimalPublisher : public rclcpp::Node {
 
   // String message variable to store and publish custom string messages.
   std_msgs::msg::String message;
+
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 };
 
 /**
