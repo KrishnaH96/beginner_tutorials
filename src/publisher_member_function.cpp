@@ -109,6 +109,7 @@ class MinimalPublisher : public rclcpp::Node {
     RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
     publisher_->publish(message);
 
+    // Publish the transform message
     publish_transform_();
   }
 
@@ -142,20 +143,20 @@ class MinimalPublisher : public rclcpp::Node {
  * and a rotation of (1.57, 1.57, 0).
  */
 void publish_transform_() {
-  // Create a TransformStamped message
+  // Created a TransformStamped message using geometry messages
   geometry_msgs::msg::TransformStamped t;
 
-  // Set the header information
+  // Set the header information for the frames
   t.header.stamp = this->get_clock()->now();
   t.header.frame_id = "world";
   t.child_frame_id = "talk";
 
-  // Set the translation
+  // Set the translation for the frame
   t.transform.translation.x = 5.0;
   t.transform.translation.y = 5.0;
   t.transform.translation.z = 0.0;
 
-  // Set the rotation using Roll-Pitch-Yaw angles
+  // Set the rotation using Roll-Pitch-Yaw angles for the frame
   tf2::Quaternion q;
   q.setRPY(1.57, 1.57, 0);
   t.transform.rotation.x = q.x();
@@ -182,6 +183,7 @@ void publish_transform_() {
   // String message variable to store and publish custom string messages.
   std_msgs::msg::String message;
 
+  // Unique pointer to the transform broadcaster
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 };
 

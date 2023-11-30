@@ -46,6 +46,7 @@ install(TARGETS
   listener
   DESTINATION lib/${PROJECT_NAME})
 
+# Install executables to the 'share' directory of the project
 install(DIRECTORY launch
 DESTINATION share/${PROJECT_NAME})
 

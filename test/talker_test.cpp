@@ -21,17 +21,17 @@
  * under the License.
  */
 
-#include <rclcpp/rclcpp.hpp>
 #include <gtest/gtest.h>
 #include <stdlib.h>
 
+#include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/string.hpp>
 
 /**
  * @brief Test fixture for testing the talker node in the first_ros_package.
  */
 class CustomTestFixture : public testing::Test {
-public:
+ public:
   /**
    * @brief Constructor for the test fixture.
    */
@@ -44,6 +44,7 @@ public:
    * @brief Set up function called before each test case.
    */
   void SetUp() override {
+    // cppcheck-suppress unusedFunction
     bool start_result =
         StartROSNode("first_ros_package", "minimal_publisher", "talker");
     ASSERT_TRUE(start_result);
@@ -55,18 +56,20 @@ public:
    * @brief Tear down function called after each test case.
    */
   void TearDown() override {
+    // cppcheck-suppress unusedFunction
     bool stop_result = StopROSNode();
     ASSERT_TRUE(stop_result);
 
     std::cout << "TEARDOWN COMPLETE" << std::endl;
   }
 
-protected:
+ protected:
   rclcpp::Node::SharedPtr test_node_;
   std::stringstream command_stream, node_info_stream, kill_command_stream;
 
   /**
-   * @brief Start the ROS node with the specified package, node, and executable names.
+   * @brief Start the ROS node with the specified package, node, and executable
+   * names.
    *
    * @param pkg_name The ROS package name.
    * @param node_name The ROS node name.
@@ -75,21 +78,19 @@ protected:
    */
   bool StartROSNode(const char *pkg_name, const char *node_name,
                     const char *exec_name) {
-
     command_stream << "ros2 run " << pkg_name << " " << exec_name
                    << " > /dev/null 2> /dev/null &";
-    node_info_stream << "ros2 node info " << "/" << node_name
-                     << " > /dev/null 2> /dev/null";
+    node_info_stream << "ros2 node info "
+                     << "/" << node_name << " > /dev/null 2> /dev/null";
     char exec_name_buffer[16];
-    snprintf(exec_name_buffer, 16, "%s", exec_name);
+    snprintf(exec_name_buffer, sizeof(exec_name_buffer), "%s", exec_name);
     kill_command_stream << "pkill --signal SIGINT " << exec_name_buffer
                         << " > /dev/null 2> /dev/null";
 
     StopROSNode();
 
     int result = system(command_stream.str().c_str());
-    if (result != 0)
-      return false;
+    if (result != 0) return false;
 
     result = -1;
     while (result != 0) {
@@ -105,8 +106,7 @@ protected:
    * @return True if the ROS node is stopped successfully, false otherwise.
    */
   bool StopROSNode() {
-    if (kill_command_stream.str().empty())
-      return true;
+    if (kill_command_stream.str().empty()) return true;
 
     int result = system(kill_command_stream.str().c_str());
     return result == 0;
@@ -114,7 +114,8 @@ protected:
 };
 
 /**
- * @brief Test case to ensure that the TrueIsTrueTest is functioning as expected.
+ * @brief Test case to ensure that the TrueIsTrueTest is functioning as
+ * expected.
  */
 TEST_F(CustomTestFixture, TrueIsTrueTest) {
   std::cout << "TEST BEGINNING!!" << std::endl;
@@ -123,15 +124,14 @@ TEST_F(CustomTestFixture, TrueIsTrueTest) {
   using std_msgs::msg::String;
   using SubscriberType = rclcpp::Subscription<String>::SharedPtr;
   bool has_data = false;
-  SubscriberType subscription =
-      test_node_->create_subscription<String>("topic", 10,
+  SubscriberType subscription = test_node_->create_subscription<String>(
+      "topic", 10,
 
-                                              [&](const std_msgs::msg::String &msg) {
-                                                RCLCPP_INFO(
-                                                    test_node_->get_logger(),
-                                                    "I heard: '%s'", msg.data.c_str());
-                                                has_data = true;
-                                              });
+      [&](const std_msgs::msg::String &msg) {
+        RCLCPP_INFO(test_node_->get_logger(), "I heard: '%s'",
+                    msg.data.c_str());
+        has_data = true;
+      });
 
   using TimerType = std::chrono::system_clock;
   using namespace std::chrono_literals;
@@ -143,7 +143,7 @@ TEST_F(CustomTestFixture, TrueIsTrueTest) {
   while (elapsed_time < 3s) {
     rclcpp::spin_some(test_node_);
     loop_rate.sleep();
-    elapsed_time =TimerType::now() - start_time;
+    elapsed_time = TimerType::now() - start_time;
   }
   EXPECT_TRUE(has_data);
 }
@@ -163,4 +163,3 @@ int main(int argc, char **argv) {
   std::cout << "ROS SHUTDOWN COMPLETE" << std::endl;
   return test_result;
 }
-
